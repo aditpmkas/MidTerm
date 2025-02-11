@@ -24,3 +24,4 @@ public class TrapPit : MonoBehaviour
         Destroy(enemy, 4f); // Hancurkan musuh setelah 4 detik
     }
 }
+// hi semua nama aku fadel!
