@@ -1,33 +1,36 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RandomBox : MonoBehaviour
 {
-    public GameObject itemPrefab; // Prefab item yang muncul (Ikan)
-    public Transform spawnPoint; // Tempat item muncul (di atas box)
-    public float popUpHeight = 0.5f; // Seberapa tinggi item muncul sebelum menghilang
-    public float popUpDuration = 0.5f; // Waktu item muncul sebelum menghilang
+    public GameObject itemPrefab;
+    public Transform spawnPoint;
+    public float popUpHeight = 0.5f;
+    public float popUpDuration = 0.5f;
+    public AudioClip collectSound; // Tambahkan Audio Clip untuk suara item
+    private AudioSource audioSource; // Tambahkan Audio Source
 
-    private bool isUsed = false; // Supaya box hanya bisa dipukul sekali
-    private Collider2D triggerCollider; // Collider yang akan dimatikan
-    private Collider2D solidCollider; // Collider yang tetap aktif
+    private bool isUsed = false;
+    private Collider2D triggerCollider;
+    private Collider2D solidCollider;
 
     void Start()
     {
-        // Ambil collider dari objek ini
         Collider2D[] colliders = GetComponents<Collider2D>();
         foreach (var col in colliders)
         {
-            if (col.isTrigger) triggerCollider = col; // Simpan trigger collider
-            else solidCollider = col; // Simpan collider solid
+            if (col.isTrigger) triggerCollider = col;
+            else solidCollider = col;
         }
+
+        audioSource = GetComponent<AudioSource>(); // Ambil AudioSource dari GameObject
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player") && !isUsed) // Jika Player menyentuh dari bawah
+        if (other.CompareTag("Player") && !isUsed)
         {
             isUsed = true;
-            if (triggerCollider != null) triggerCollider.enabled = false; // Matikan trigger, tetap solid
+            if (triggerCollider != null) triggerCollider.enabled = false;
             SpawnItem();
         }
     }
@@ -36,7 +39,19 @@ public class RandomBox : MonoBehaviour
     {
         GameObject item = Instantiate(itemPrefab, spawnPoint.position, Quaternion.identity);
         StartCoroutine(MoveUpAndDisappear(item));
+
+        if (collectSound != null && audioSource != null)
+        {
+            Debug.Log("Playing collect sound!"); // 🛠 Debug cek suara dipanggil
+            audioSource.PlayOneShot(collectSound);
+        }
+        else
+        {
+            Debug.LogError("AudioSource atau AudioClip tidak ditemukan!");
+        }
     }
+
+
 
     System.Collections.IEnumerator MoveUpAndDisappear(GameObject item)
     {
@@ -51,7 +66,7 @@ public class RandomBox : MonoBehaviour
             yield return null;
         }
 
-        Destroy(item); // Hapus item setelah muncul
-        ScoreManager.instance.AddScore(1); // Tambah skor
+        Destroy(item);
+        ScoreManager.instance.AddScore(1);
     }
 }

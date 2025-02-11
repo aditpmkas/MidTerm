@@ -2,35 +2,49 @@ using UnityEngine;
 
 public class TrapBox : MonoBehaviour
 {
-    public GameObject enemyPrefab; // Prefab musuh yang akan muncul
-    public Transform spawnPoint; // Tempat musuh muncul (di atas box)
-    public float popUpHeight = 0.5f; // Seberapa tinggi musuh muncul
-    public float popUpDuration = 0.5f; // Waktu musuh muncul sebelum bergerak
+    public GameObject enemyPrefab;
+    public Transform spawnPoint;
+    public float popUpHeight = 0.5f;
+    public float popUpDuration = 0.5f;
+    public AudioClip trapSound; // Tambahkan Audio Clip untuk suara jebakan
+    private AudioSource audioSource; // Tambahkan Audio Source
 
-    private bool isTriggered = false; // Supaya box hanya bisa dipukul sekali
-    private Collider2D triggerCollider; // Collider yang akan dimatikan
-    private Collider2D solidCollider; // Collider yang tetap aktif
+    private bool isTriggered = false;
+    private Collider2D triggerCollider;
+    private Collider2D solidCollider;
 
     void Start()
     {
-        // Ambil collider dari objek ini
         Collider2D[] colliders = GetComponents<Collider2D>();
         foreach (var col in colliders)
         {
-            if (col.isTrigger) triggerCollider = col; // Simpan trigger collider
-            else solidCollider = col; // Simpan collider solid
+            if (col.isTrigger) triggerCollider = col;
+            else solidCollider = col;
         }
+
+        audioSource = GetComponent<AudioSource>(); // Ambil AudioSource dari GameObject
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player") && !isTriggered) // Jika Player menyentuh dari bawah
+        if (other.CompareTag("Player") && !isTriggered)
         {
             isTriggered = true;
-            if (triggerCollider != null) triggerCollider.enabled = false; // Matikan trigger, tetap solid
+            if (triggerCollider != null) triggerCollider.enabled = false;
             SpawnEnemy();
+
+            if (trapSound != null && audioSource != null)
+            {
+                Debug.Log("Playing trap sound!"); //  Debug cek suara dipanggil
+                audioSource.PlayOneShot(trapSound);
+            }
+            else
+            {
+                Debug.LogError("AudioSource atau AudioClip tidak ditemukan!");
+            }
         }
     }
+
 
     void SpawnEnemy()
     {
@@ -44,7 +58,6 @@ public class TrapBox : MonoBehaviour
         Vector3 endPos = startPos + Vector3.up * popUpHeight;
         float elapsedTime = 0f;
 
-        // Efek musuh naik ke atas sebelum bergerak
         while (elapsedTime < popUpDuration)
         {
             enemy.transform.position = Vector3.Lerp(startPos, endPos, elapsedTime / popUpDuration);
@@ -52,11 +65,10 @@ public class TrapBox : MonoBehaviour
             yield return null;
         }
 
-        // Aktifkan AI Musuh jika ada script Enemy di dalamnya
         Enemy enemyScript = enemy.GetComponent<Enemy>();
         if (enemyScript != null)
         {
-            enemyScript.enabled = true; // Aktifkan pergerakan musuh
+            enemyScript.enabled = true;
         }
     }
 }

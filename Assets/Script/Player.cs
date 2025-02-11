@@ -21,7 +21,11 @@ public class Player : MonoBehaviour
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
 
+    [Header("Audio Settings")]
+    public AudioSource jumpSound; // Tambahkan AudioSource untuk jump sound
+
     private Rigidbody2D rb;
+    private Animator anim;
     private bool isGrounded;
     private float jumpTimeCounter;
     private bool isJumping;
@@ -33,9 +37,9 @@ public class Player : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = gravityMultiplier;
-        startPosition = transform.position; // Simpan posisi awal saat game dimulai
+        startPosition = transform.position;
+        anim = GetComponent<Animator>();
     }
-
 
     void Update()
     {
@@ -43,20 +47,27 @@ public class Player : MonoBehaviour
         HandleMovement();
         HandleJump();
         ApplyCustomGravity();
+        UpdateAnimation();
     }
 
     void HandleMovement()
     {
         moveInput = Input.GetAxisRaw("Horizontal");
 
-        currentSpeed = Mathf.MoveTowards(currentSpeed, moveInput * moveSpeed,
-            (moveInput != 0 ? acceleration : deceleration) * Time.deltaTime);
+        if (Mathf.Abs(moveInput) > 0.1f)
+        {
+            currentSpeed = Mathf.MoveTowards(currentSpeed, moveInput * moveSpeed, acceleration * Time.deltaTime);
+        }
+        else
+        {
+            currentSpeed = Mathf.MoveTowards(currentSpeed, 0, deceleration * Time.deltaTime);
+        }
 
         rb.velocity = new Vector2(currentSpeed, rb.velocity.y);
 
         if (moveInput != 0)
         {
-            transform.localScale = new Vector3(Mathf.Sign(-moveInput) * Mathf.Abs(transform.localScale.x),
+            transform.localScale = new Vector3(Mathf.Sign(moveInput) * Mathf.Abs(transform.localScale.x),
                 transform.localScale.y, transform.localScale.z);
         }
     }
@@ -68,6 +79,13 @@ public class Player : MonoBehaviour
             isJumping = true;
             jumpTimeCounter = maxJumpHoldTime;
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            anim.SetTrigger("Jump");
+
+            // **Memainkan suara lompat langsung tanpa delay**
+            if (jumpSound != null)
+            {
+                jumpSound.PlayOneShot(jumpSound.clip);
+            }
         }
 
         if (Input.GetKey(KeyCode.W) && isJumping && jumpTimeCounter > 0)
@@ -80,6 +98,7 @@ public class Player : MonoBehaviour
             isJumping = false;
         }
     }
+
 
     void ApplyCustomGravity()
     {
@@ -98,12 +117,24 @@ public class Player : MonoBehaviour
     {
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
     }
-    public void RespawnAtStart()
+
+    void UpdateAnimation()
     {
-        transform.position = startPosition; // Kembalikan player ke posisi awal
-        rb.velocity = Vector2.zero; // Reset kecepatan agar tidak ada momentum saat respawn
+        if (Mathf.Abs(rb.velocity.x) > 0.1f)
+        {
+            anim.Play("run 1_Clip");
+        }
+        else
+        {
+            anim.Play("front_Clip");
+        }
+
+        anim.SetBool("isJumping", !isGrounded);
     }
 
-
-
+    public void RespawnAtStart()
+    {
+        transform.position = startPosition;
+        rb.velocity = Vector2.zero;
+    }
 }
